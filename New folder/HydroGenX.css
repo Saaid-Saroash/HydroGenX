@@ -1,0 +1,106 @@
+body {
+    font-family: 'Courier New', Courier, monospace;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('file:///C:/Users/Sgr/Desktop/img.jpg') no-repeat center center fixed;
+    background-size: cover;
+    color: #00FF41;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 20px;
+    margin: 0;
+}
+.status-box, .control {
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #00FF41;
+    padding: 10px;
+    text-align: center;
+    border-radius: 8px;
+    box-shadow: 0 0 10px #00FF41;
+}
+.status-box {
+    width: 150px;
+    margin: 0 auto 20px;
+}
+.control-panel {
+    position: absolute;
+    left: 20px;
+    top: 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 300px;
+}
+.loading-bar {
+    width: 100%;
+    background: #222;
+    border: 1px solid #00FF41;
+    height: 20px;
+    margin-top: 10px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 0 5px #00FF41;
+}
+.loading-bar div {
+    height: 100%;
+    background: linear-gradient(90deg, #0000FF, #0000A0);
+    width: 0;
+    transition: width 0.5s ease-in-out;
+}
+button, input {
+    padding: 10px;
+    margin-top: 10px;
+    width: 100%;
+    font-size: 18px;
+    border-radius: 5px;
+    border: none;
+    box-shadow: 0 0 5px #00FF41;
+}
+button {
+    background: linear-gradient(to right, #00FF41, #006600);
+    color: #121212;
+    cursor: pointer;
+}
+input {
+    background: rgba(255, 255, 255, 0.1);
+    color: #00FF41;
+    border: 1px solid #00FF41;
+    box-sizing: border-box;
+    width: calc(100% - 22px);
+}
+.hidden { display: none; }
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    width: 50%;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #00FF41;
+    padding: 20px;
+    border-radius: 8px;
+    color: #00FF41;
+}
+
+#cmdBox {
+    position: absolute;
+    bottom: 100px;
+    right: 20px;
+    width: 300px;
+    height: 50vh;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #00FF41;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px #00FF41;
+    color: #00FF41;
+    overflow-y: auto;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#cmdBox pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}

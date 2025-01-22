@@ -1,0 +1,64 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HydroGenX</title>
+    <link rel="stylesheet" href="HydroGenX.css">
+</head>
+<body>
+    <div class="status-box" id="status">Device Offline</div>
+
+    <div class="control-panel">
+        <div class="control" id="onOffControl">
+            <button id="onOffSwitch">Power Up</button>
+            <div id="onPassword" class="hidden">
+                <input type="password" id="onInput" placeholder="Enter Password">
+                <button id="onConfirm">Confirm</button>
+            </div>
+            <div id="loading" class="loading-bar hidden"><div></div></div>
+        </div>
+
+        <div class="control hidden" id="temperatureControl">
+            <div id="temperature">Temperature: 27°C</div>
+        </div>
+
+        <div class="control hidden" id="batteryControl">
+            <div id="battery">Battery: 97%</div>
+        </div>
+
+        <div class="control hidden" id="voltageControl">
+            <div id="voltage">Voltage: 0.02V</div>
+        </div>
+
+        <div class="control hidden" id="efficiencyControl">
+            <div id="efficiency">Efficiency Rate: -15%</div>
+        </div>
+
+        <div class="control">
+            <button id="emergencyShutdown">Emergency Shutdown</button>
+            <div id="shutdownPassword" class="hidden">
+                <input type="password" id="shutdownInput" placeholder="Enter Password">
+                <button id="shutdownConfirm">Confirm</button>
+            </div>
+        </div>
+
+        <div class="control">
+            <button id="killSwitch">Kill Switch</button>
+            <div id="killPassword" class="hidden">
+                <input type="password" id="killInput" placeholder="Enter Password">
+                <button id="killConfirm">Confirm</button>
+            </div>
+        </div>
+
+        <div id="shutdownLoading" class="loading-bar hidden modal"><div></div></div>
+    </div>
+
+    <div id="centerMessage" class="hidden modal"></div>
+
+    <div id="cmdBox">
+        <pre id="cmdOutput">Welcome to the HydroGenX Interface</pre>
+    </div>
+
+    <script src="HydroGenX.js"></script>
+</body>
+</html>
