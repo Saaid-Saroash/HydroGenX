@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: 'Courier New', Courier, monospace;
-      background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('img.jpg') no-repeat center center fixed;
+      background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('img.jpg') no-repeat center center fixed;
       background-size: cover;
       color: #00FF41;
       display: flex;
@@ -18,7 +18,7 @@
     }
     .status-box,
     .control {
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0,0,0,0.7);
       border: 2px solid #00FF41;
       padding: 10px;
       text-align: center;
@@ -54,6 +54,27 @@
       width: 0;
       transition: width 0.5s ease-in-out;
     }
+    /* Center loading bar for emergency shutdown and kill switch (bigger) */
+    .center-loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px;
+      height: 30px;
+      background: #222;
+      border: 1px solid #00FF41;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: inset 0 0 5px #00FF41;
+      z-index: 1000;
+    }
+    .center-loading div {
+      height: 100%;
+      background: linear-gradient(90deg, #0000FF, #0000A0);
+      width: 0;
+      transition: width 0.5s ease-in-out;
+    }
     button,
     input {
       padding: 10px;
@@ -70,7 +91,7 @@
       cursor: pointer;
     }
     input {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255,255,255,0.1);
       color: #00FF41;
       border: 1px solid #00FF41;
       box-sizing: border-box;
@@ -83,10 +104,9 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      z-index: 10;
-      width: 50%;
-      text-align: center;
-      background: rgba(0, 0, 0, 0.7);
+      z-index: 1100;
+      width: 300px;
+      background: rgba(0,0,0,0.9);
       border: 2px solid #00FF41;
       padding: 20px;
       border-radius: 8px;
@@ -98,7 +118,7 @@
       right: 20px;
       width: 300px;
       height: 50vh;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0,0,0,0.8);
       border: 2px solid #00FF41;
       padding: 10px;
       border-radius: 8px;
@@ -152,24 +172,45 @@
     <pre id="cmdOutput">Welcome to the HydroGenX Interface</pre>
   </div>
 
+  <!-- Center loading bar element -->
+  <div id="centerLoading" class="center-loading hidden"><div></div></div>
+
+  <!-- Custom password modal (hidden by default) -->
+  <div id="passwordModal" class="modal hidden">
+    <p>Please enter the password:</p>
+    <input id="passwordInput" type="password" placeholder="Password" />
+    <br />
+    <button id="passwordSubmit">Submit</button>
+    <button id="passwordCancel">Cancel</button>
+  </div>
+
   <script>
+    // Global element references
     const elements = {
       status: document.getElementById('status'),
       onOffSwitch: document.getElementById('onOffSwitch'),
       shutdownBtn: document.getElementById('shutdownBtn'),
       killSwitchBtn: document.getElementById('killSwitchBtn'),
       loading: document.getElementById('loading'),
+      centerLoading: document.getElementById('centerLoading'),
       temperature: document.getElementById('temperature'),
       battery: document.getElementById('battery'),
       voltage: document.getElementById('voltage'),
       efficiency: document.getElementById('efficiency'),
-      cmdOutput: document.getElementById('cmdOutput')
+      cmdOutput: document.getElementById('cmdOutput'),
+      passwordModal: document.getElementById('passwordModal'),
+      passwordInput: document.getElementById('passwordInput'),
+      passwordSubmit: document.getElementById('passwordSubmit'),
+      passwordCancel: document.getElementById('passwordCancel')
     };
 
     let isOn = false;
-    const PASSWORD = "5896"; // Password remains the same
+    const PASSWORD = "5896"; // The correct password
 
-    // Simulation variables – these will be persisted if the system is on.
+    // Global variable to store the selected device (if needed)
+    let selectedDevice = null;
+
+    // Simulation variables
     let currentTempR;
     let currentTempC;
     let currentVoltage;
@@ -181,7 +222,7 @@
     const voltageTotalTime = 45000; // 45 seconds in ms
     const voltageIntervalTime = 2000; // update every 2 seconds
 
-    // Helper functions for localStorage updates
+    // Helper: Save state to localStorage
     function saveState() {
       localStorage.setItem('isOn', isOn);
       localStorage.setItem('currentTempR', currentTempR);
@@ -190,6 +231,7 @@
       localStorage.setItem('cmdOutput', elements.cmdOutput.textContent);
     }
 
+    // Helper: Restore state from localStorage
     function restoreState() {
       isOn = localStorage.getItem('isOn') === "true";
       currentTempR = localStorage.getItem('currentTempR') ? parseInt(localStorage.getItem('currentTempR')) : (Math.floor(Math.random() * 6) + 27);
@@ -201,7 +243,7 @@
       }
     }
 
-    // Logging to cmdOutput and saving to storage
+    // Log messages to the command output and save state
     function logCmdOutput(message) {
       elements.cmdOutput.textContent += '\n' + message;
       elements.cmdOutput.scrollTop = elements.cmdOutput.scrollHeight;
@@ -218,22 +260,49 @@
       element.textContent = text;
     }
 
-    // Show/hide the loading bar (simple simulation)
-    function toggleLoading(state) {
-      toggleVisibility(elements.loading, state);
+    // Existing loading function for the control panel
+    function simulateLoading(duration, callback) {
+      const loadingBar = elements.loading;
+      const innerBar = loadingBar.querySelector('div');
+      innerBar.style.width = '0%';
+      toggleVisibility(loadingBar, true);
+      setTimeout(() => {
+        innerBar.style.transition = `width ${duration}ms linear`;
+        innerBar.style.width = '100%';
+      }, 50);
+      setTimeout(() => {
+        toggleVisibility(loadingBar, false);
+        innerBar.style.width = '0%';
+        innerBar.style.transition = 'width 0.5s ease-in-out';
+        callback();
+      }, duration);
     }
 
-    // Start the simulation controls
+    // simulateCenterLoading function for emergency shutdown and kill switch
+    function simulateCenterLoading(duration, callback) {
+      const centerLoadingBar = elements.centerLoading;
+      const innerBar = centerLoadingBar.querySelector('div');
+      innerBar.style.width = '0%';
+      toggleVisibility(centerLoadingBar, true);
+      setTimeout(() => {
+        innerBar.style.transition = `width ${duration}ms linear`;
+        innerBar.style.width = '100%';
+      }, 50);
+      setTimeout(() => {
+        toggleVisibility(centerLoadingBar, false);
+        innerBar.style.width = '0%';
+        innerBar.style.transition = 'width 0.5s ease-in-out';
+        callback();
+      }, duration);
+    }
+
+    // Start the simulation controls (temperature, battery, voltage, etc.)
     function startControls() {
-      // The battery is fixed at 97%
       updateElementText(elements.battery, "Battery: 97%");
       saveState();
-
-      // Calculate voltage increment per interval
       const voltageSteps = voltageTotalTime / voltageIntervalTime;
       const voltageIncrement = (voltageTarget - currentVoltage) / voltageSteps;
 
-      // Update R.TEMP gradually until targetTempR with a random interval between 2-5 seconds
       function updateRTEMP() {
         if (!isOn) return;
         if (currentTempR < targetTempR) {
@@ -242,11 +311,10 @@
         }
         updateElementText(elements.temperature, `R.TEMP: ${currentTempR}°C`);
         saveState();
-        const nextInterval = Math.floor(Math.random() * 3000) + 2000; // 2000-5000ms
+        const nextInterval = Math.floor(Math.random() * 3000) + 2000;
         setTimeout(updateRTEMP, nextInterval);
       }
 
-      // Update C.TEMP gradually until targetTempC with a random interval between 2-5 seconds
       function updateCTEMP() {
         if (!isOn) return;
         if (currentTempC < targetTempC) {
@@ -259,110 +327,156 @@
         setTimeout(updateCTEMP, nextInterval);
       }
 
-      // Update Voltage gradually from currentVoltage to voltageTarget over 45 seconds
-      const voltageInterval = setInterval(() => {
-        if (!isOn) {
-          clearInterval(voltageInterval);
-          return;
-        }
-        if (currentVoltage < voltageTarget) {
-          currentVoltage += voltageIncrement;
-          if (currentVoltage > voltageTarget) currentVoltage = voltageTarget;
-          updateElementText(elements.voltage, `Voltage: ${currentVoltage.toFixed(1)}V`);
-          saveState();
-        } else {
-          clearInterval(voltageInterval);
-        }
-      }, voltageIntervalTime);
+      setTimeout(() => {
+        const voltageInterval = setInterval(() => {
+          if (!isOn) {
+            clearInterval(voltageInterval);
+            return;
+          }
+          if (currentVoltage < voltageTarget) {
+            currentVoltage += voltageIncrement;
+            if (currentVoltage > voltageTarget) currentVoltage = voltageTarget;
+            updateElementText(elements.voltage, `Voltage: ${currentVoltage.toFixed(1)}V`);
+            saveState();
+          } else {
+            currentVoltage = (Math.random() * (16.3 - 15.7)) + 15.7;
+            updateElementText(elements.voltage, `Voltage: ${currentVoltage.toFixed(1)}V`);
+            saveState();
+          }
+        }, voltageIntervalTime);
+      }, 3000);
 
-      // Start the recursive updates
-      updateRTEMP();
-      updateCTEMP();
+      setTimeout(updateRTEMP, 2000);
+      setTimeout(updateCTEMP, 2000);
     }
 
-    // Toggle power state and update the UI accordingly.
-    function togglePower() {
-      if (!isOn) {
-        logCmdOutput('Starting system...');
-        toggleLoading(true);
-        setTimeout(() => {
-          elements.status.textContent = 'Active';
-          elements.onOffSwitch.textContent = 'Power Down';
-          isOn = true;
-          toggleLoading(false);
-          // Make sensor controls visible
-          toggleVisibility(document.getElementById('temperatureControl'), true);
-          toggleVisibility(document.getElementById('batteryControl'), true);
-          toggleVisibility(document.getElementById('voltageControl'), true);
-          toggleVisibility(document.getElementById('efficiencyControl'), true);
-          logCmdOutput('System powered up.');
-          // Start the simulation – use restored values if available.
-          startControls();
-          saveState();
-        }, 2000);
-      } else {
+    // Custom function to show the password modal.
+    // It now automatically focuses the password input field.
+    // It also listens for the Enter key so you can type directly and submit.
+    function showPasswordModal(callback) {
+      elements.passwordInput.value = ""; // Clear previous input
+      toggleVisibility(elements.passwordModal, true);
+      elements.passwordInput.focus(); // Automatically focus the input field
+      
+      // Listen for Enter key on the input field.
+      elements.passwordInput.addEventListener('keydown', function handler(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          elements.passwordSubmit.click();
+          // Remove this handler to avoid duplicate calls.
+          elements.passwordInput.removeEventListener('keydown', handler);
+        }
+      });
+
+      // When the user clicks Submit...
+      elements.passwordSubmit.onclick = function() {
+        const entered = elements.passwordInput.value;
+        toggleVisibility(elements.passwordModal, false);
+        if (entered === PASSWORD) {
+          callback();
+        } else {
+          logCmdOutput('Access denied: Incorrect password');
+          alert("Incorrect password!");
+        }
+      };
+      // Cancel button hides the modal without calling the callback.
+      elements.passwordCancel.onclick = function() {
+        toggleVisibility(elements.passwordModal, false);
+        logCmdOutput('Password entry cancelled.');
+      };
+    }
+
+    // Modified requestPassword function to use the custom modal
+    function requestPassword(action) {
+      showPasswordModal(action);
+    }
+
+    // togglePower: When powering up, prompt for a device connection; when powering down, simply shut down.
+    async function togglePower() {
+      if (isOn) {
+        // Power Down branch – no device prompt.
         logCmdOutput('Shutting down system...');
-        toggleLoading(true);
-        setTimeout(() => {
+        const randomDelay = Math.floor(Math.random() * 3000) + 2000;
+        simulateLoading(randomDelay, () => {
           elements.status.textContent = 'Device Offline';
           elements.onOffSwitch.textContent = 'Power Up';
           isOn = false;
-          toggleLoading(false);
-          // Hide sensor controls
           toggleVisibility(document.getElementById('temperatureControl'), false);
           toggleVisibility(document.getElementById('batteryControl'), false);
           toggleVisibility(document.getElementById('voltageControl'), false);
           toggleVisibility(document.getElementById('efficiencyControl'), false);
           logCmdOutput('System powered down.');
-          // Clear simulation values from storage
           localStorage.removeItem('currentTempR');
           localStorage.removeItem('currentTempC');
           localStorage.removeItem('currentVoltage');
           saveState();
-        }, 2000);
+        });
+        return;
       }
+      // Power Up branch – prompt for a device connection using the WebUSB API.
+      if (!navigator.usb) {
+        alert('Device connection is not supported in your browser. Cannot detect device.');
+        return;
+      }
+      let device;
+      try {
+        device = await navigator.usb.requestDevice({ filters: [{}] });
+      } catch (error) {
+        logCmdOutput("No device selected.");
+        alert("No device selected. Please connect a device and try again.");
+        return;
+      }
+      selectedDevice = device; // Save the selected device globally.
+      logCmdOutput("Device selected: " + device.productName);
+      const randomDelay = Math.floor(Math.random() * 3000) + 2000;
+      logCmdOutput('Starting system...');
+      simulateLoading(randomDelay, () => {
+        elements.status.textContent = 'Active';
+        elements.onOffSwitch.textContent = 'Power Down';
+        isOn = true;
+        toggleVisibility(document.getElementById('temperatureControl'), true);
+        toggleVisibility(document.getElementById('batteryControl'), true);
+        toggleVisibility(document.getElementById('voltageControl'), true);
+        toggleVisibility(document.getElementById('efficiencyControl'), true);
+        logCmdOutput('System powered up.');
+        startControls();
+        saveState();
+      });
     }
 
-    // Request a password then perform the provided action if correct.
-    function requestPassword(action) {
-      let userPassword = prompt("Enter password:");
-      if (userPassword === PASSWORD) {
-        action();
-      } else {
-        logCmdOutput('Access denied: Incorrect password');
-        alert("Incorrect password!");
-      }
-    }
-
-    // Emergency shutdown routine.
+    // Emergency shutdown routine with center loading bar
     function emergencyShutdown() {
       logCmdOutput('Emergency Shutdown initiated!');
-      alert("Emergency Shutdown activated!");
-      elements.status.textContent = 'Emergency Shutdown';
-      elements.onOffSwitch.textContent = 'Power Up';
-      isOn = false;
-      toggleVisibility(document.getElementById('temperatureControl'), false);
-      toggleVisibility(document.getElementById('batteryControl'), false);
-      toggleVisibility(document.getElementById('voltageControl'), false);
-      toggleVisibility(document.getElementById('efficiencyControl'), false);
-      // Remove simulation state
-      localStorage.removeItem('currentTempR');
-      localStorage.removeItem('currentTempC');
-      localStorage.removeItem('currentVoltage');
-      saveState();
+      const randomDelay = Math.floor(Math.random() * 3000) + 2000;
+      simulateCenterLoading(randomDelay, () => {
+        alert("Emergency Shutdown activated!");
+        elements.status.textContent = 'Device Offline';
+        elements.onOffSwitch.textContent = 'Power Up';
+        isOn = false;
+        toggleVisibility(document.getElementById('temperatureControl'), false);
+        toggleVisibility(document.getElementById('batteryControl'), false);
+        toggleVisibility(document.getElementById('voltageControl'), false);
+        toggleVisibility(document.getElementById('efficiencyControl'), false);
+        localStorage.removeItem('currentTempR');
+        localStorage.removeItem('currentTempC');
+        localStorage.removeItem('currentVoltage');
+        saveState();
+      });
     }
 
-    // Kill switch routine.
+    // Kill switch routine with center loading bar
     function killSwitch() {
       logCmdOutput('Kill Switch activated! System locked.');
-      alert("Kill Switch activated! System locked.");
-      document.body.innerHTML = "<h1 style='color:red; text-align:center;'>SYSTEM LOCKED</h1>";
-      // Optionally, you could clear storage here if desired.
-      localStorage.clear();
+      const randomDelay = Math.floor(Math.random() * 3000) + 2000;
+      simulateCenterLoading(randomDelay, () => {
+        alert("Kill Switch activated! System locked.");
+        document.body.innerHTML = "<h1 style='color:red; text-align:center;'>SYSTEM LOCKED</h1>";
+        localStorage.clear();
+      });
     }
 
     // Event listeners for buttons.
-    elements.onOffSwitch.addEventListener('click', togglePower);
+    elements.onOffSwitch.addEventListener('click', () => { togglePower(); });
     elements.shutdownBtn.addEventListener('click', () => requestPassword(emergencyShutdown));
     elements.killSwitchBtn.addEventListener('click', () => requestPassword(killSwitch));
 
@@ -370,14 +484,13 @@
     document.addEventListener("DOMContentLoaded", () => {
       restoreState();
       if (isOn) {
-        // Restore the UI for an active system.
         elements.status.textContent = 'Active';
         elements.onOffSwitch.textContent = 'Power Down';
         toggleVisibility(document.getElementById('temperatureControl'), true);
         toggleVisibility(document.getElementById('batteryControl'), true);
         toggleVisibility(document.getElementById('voltageControl'), true);
         toggleVisibility(document.getElementById('efficiencyControl'), true);
-        logCmdOutput('System restored from.');
+        logCmdOutput('System restored.');
         startControls();
       }
     });
